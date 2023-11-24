@@ -1,0 +1,9 @@
+{
+  "C_Cpp.default.compilerPath": "cl.exe",
+  "files.associations": {
+    "*.v": "verilog",
+    "algorithm": "cpp",
+    "iostream": "cpp"
+  },
+  "C_Cpp.errorSquiggles": "disabled"
+}
