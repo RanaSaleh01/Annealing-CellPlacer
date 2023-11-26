@@ -3,7 +3,10 @@
   "files.associations": {
     "*.v": "verilog",
     "algorithm": "cpp",
-    "iostream": "cpp"
+    "iostream": "cpp",
+    "cstdlib": "cpp",
+    "vector": "cpp",
+    "sstream": "cpp"
   },
   "C_Cpp.errorSquiggles": "disabled"
 }
