@@ -7,7 +7,9 @@
 #include <sstream>
 #include <ctime>
 #include <string>
-#include <vector>
+#include <cstdlib> 
+#include <ctime>
+
 using namespace std;
 
 struct Placement
@@ -47,12 +49,39 @@ vector<vector<int>> parseNetlist(const string &netlistFileName, Placement &P)
     return netlist;
 }
 
+void randomPlacement(Placement &P)
+{
+    // vector storing cell positions
+    vector<pair<int, int>> cellPositions;
+
+    // Initialize srand function with current time
+    srand(static_cast<unsigned>(time(0)));
+
+    // Random placement of cells
+    for (int i = 0; i < P.num_cells; ++i)
+    {
+        int row = rand() % P.num_rows;
+        int col = rand() % P.num_cols;
+        cellPositions.push_back({row, col});
+    }
+
+    // Displaying placement
+    cout << endl
+         << "CELL PLACEMENT" << endl;
+    cout << "----------------------------------------------------" << endl;
+    for (int i = 0; i < P.num_cells; ++i)
+    {
+        cout << "Cell " << i + 1 << ": Row " << cellPositions[i].first << ", Col " << cellPositions[i].second << endl;
+    }
+    cout << "----------------------------------------------------" << endl;
+}
+
 int main()
 {
-    srand(static_cast<unsigned>(time(0)));
-    string netlistFileName = "d2.txt"; // Provide the correct file name
+    string netlistFileName = "d2.txt"; 
     Placement placement;
     vector<vector<int>> netlist = parseNetlist(netlistFileName, placement);
+
     cout << "----------------------------------------------------" << endl;
     cout << endl;
     cout << endl;
@@ -73,4 +102,8 @@ int main()
         }
         cout << endl;
     }
+
+    randomPlacement(placement);
+
+    return 0;
 }
