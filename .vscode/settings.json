@@ -6,7 +6,8 @@
     "iostream": "cpp",
     "cstdlib": "cpp",
     "vector": "cpp",
-    "sstream": "cpp"
+    "sstream": "cpp",
+    "ostream": "cpp"
   },
   "C_Cpp.errorSquiggles": "disabled"
 }
