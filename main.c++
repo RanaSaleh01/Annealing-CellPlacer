@@ -7,7 +7,9 @@
 #include <sstream>
 #include <ctime>
 #include <string>
-#include <vector>
+#include <cstdlib>
+#include <ctime>
+
 using namespace std;
 
 struct Placement
@@ -67,92 +69,38 @@ struct Placement
 
             for (int j = 0; j < comp; ++j)
             {
-                file >> nets[i][j];
-                cells_tobeplaced.push_back(nets[i][j]);
+                file >> netlist[i][j];
             }
         }
 
         file.close();
-        return nets;
+        return netlist;
     }
 
-    void displayfloor()
+    int main()
     {
-        for (int i = 0; i < num_rows; ++i)
-        {
-            for (int j = 0; j < num_cols; ++j)
-            {
-                if (grid[i][j] == -1)
-                {
-                    cout << "-- ";
-                }
-                else
-                {
-                    cout << setw(2) << setfill('0') << grid[i][j] << " ";
-                }
-            }
-            cout << endl;
-        }
-    }
-
-    void binaryfloorplan()
-    {
-        cout << "Floor Plan in Binary:" << endl;
-        for (int i = 0; i < num_rows; ++i)
-        {
-            for (int j = 0; j < num_cols; ++j)
-            {
-                cout << (grid[i][j] == -1 ? '0' : '1');
-            }
-            cout << endl;
-        }
-    }
-};
-
-int main()
-{
-    double coolingRate = 0.95;
-
-    srand(static_cast<unsigned>(time(0)));
-    string netlistFileName = "d0.txt"; // Provide the correct file name
-
-    Placement placement;
-
-    vector<vector<int>> nets = placement.parseNetlist(netlistFileName, placement);
-    cout << "----------------------------------------------------" << endl;
-    cout << endl;
-    cout << endl;
-    cout << "Number of cells: " << placement.num_comptobeplaced << endl;
-    cout << "Number of nets: " << placement.num_connectionBWcomponets << endl;
-    cout << "Number of rows: " << placement.num_rows << endl;
-    cout << "Number of columns: " << placement.num_cols << endl;
-    cout << endl;
-    cout << "NETLIST" << endl;
-    cout << "----------------------------------------------------" << endl;
-
-    for (int i = 0; i < nets.size(); ++i)
-    {
-        cout << "Net " << i + 1 << " cells: ";
-        for (int j = 0; j < nets[i].size(); ++j)
-        {
-            cout << nets[i][j] << " ";
-        }
+        srand(static_cast<unsigned>(time(0)));
+        string netlistFileName = "d2.txt"; // Provide the correct file name
+        Placement placement;
+        vector<vector<int>> netlist = parseNetlist(netlistFileName, placement);
+        cout << "----------------------------------------------------" << endl;
         cout << endl;
+        cout << endl;
+        cout << "Number of cells: " << placement.num_comptobeplaced << endl;
+        cout << "Number of nets: " << placement.num_connectionBWcomponets << endl;
+        cout << "Number of rows: " << placement.num_rows << endl;
+        cout << "Number of columns: " << placement.num_cols << endl;
+        cout << endl;
+        cout << "NETLIST" << endl;
+        cout << "----------------------------------------------------" << endl;
+
+        for (int i = 0; i < nets.size(); ++i)
+        {
+            cout << "Net " << i + 1 << " cells: ";
+            for (int j = 0; j < nets[i].size(); ++j)
+            {
+                cout << nets[i][j] << " ";
+            }
+            cout << endl;
+        }
     }
-
-    placement.initialRandomPlacement();
-
-    // Display the initial floor plan
-    cout << "All CELLS: ";
-    for (int i = 0; i < placement.cells_tobeplaced.size(); i++)
-    {
-        cout << placement.cells_tobeplaced[i] << ", ";
-    }
-
-    cout << "\nInitial Floor Plan random placement:\n"
-         << endl;
-    placement.displayfloor();
-
-    cout << "\n\nInitial Floor Plan IN BINARY:" << endl;
-    placement.binaryfloorplan();
-}
