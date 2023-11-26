@@ -21,27 +21,28 @@ struct Placement
     vector<vector<int>> grid;
     vector<vector<int>> nets;
 
-    void initialRandomPlacement()
+    void initializeGridRandom()
     {
         sort(cells_tobeplaced.begin(), cells_tobeplaced.end());
         cells_tobeplaced.erase(unique(cells_tobeplaced.begin(), cells_tobeplaced.end()), cells_tobeplaced.end());
 
         grid.resize(num_rows, vector<int>(num_cols, -1));
 
-        vector<int> cells_and_empty_sites(num_rows * num_cols, -1);
+        // Create a vector with both cells and empty sites
+        vector<int> allcells(num_rows * num_cols, -1);
         for (int cell : cells_tobeplaced)
         {
-            cells_and_empty_sites[cell] = cell;
+            allcells[cell] = cell;
         }
 
-        random_shuffle(cells_and_empty_sites.begin(), cells_and_empty_sites.end());
+        random_shuffle(allcells.begin(), allcells.end());
 
         int index = 0;
         for (int row = 0; row < num_rows; ++row)
         {
             for (int col = 0; col < num_cols; ++col)
             {
-                grid[row][col] = cells_and_empty_sites[index++];
+                grid[row][col] = allcells[index++];
             }
         }
     }
@@ -75,6 +76,59 @@ struct Placement
         return nets;
     }
 
+    pair<int, int> findpos(int cell)
+    {
+        for (int row = 0; row < num_rows; ++row)
+        {
+            for (int col = 0; col < num_cols; ++col)
+            {
+                if (grid[row][col] == cell)
+                {
+                    return make_pair(row, col);
+                }
+            }
+        }
+        cerr << "cell not on the grid" << endl;
+        return make_pair(-1, -1);
+    }
+
+    double HPWLcalc(vector<int> &net)
+    {
+        double res_hpwl = 0.0;
+
+        for (int i = 1; i < net.size(); ++i)
+        {
+            // pos of cells on the grid
+            pair<int, int> pos1 = findpos(net[i - 1]);
+            pair<int, int> pos2 = findpos(net[i]);
+
+            // coord of rows
+            double row1 = pos1.first + 0.5;
+            double row2 = pos2.first + 0.5;
+
+            // coord of columns
+            double col1 = pos1.second + 0.5;
+            double col2 = pos2.second + 0.5;
+
+            // Euclidean distance from the center
+            res_hpwl = res_hpwl + sqrt(pow(row1 - row2, 2) + pow(col1 - col2, 2));
+        }
+
+        return res_hpwl;
+    }
+
+    int calcTotalWireLenghth()
+    {
+        int totalLength = 0;
+
+        for (auto &net : nets)
+        {
+            totalLength += HPWLcalc(net);
+        }
+
+        return totalLength;
+    }
+
     void displayfloor()
     {
         for (int i = 0; i < num_rows; ++i)
@@ -93,7 +147,6 @@ struct Placement
             cout << endl;
         }
     }
-
     void binaryfloorplan()
     {
         cout << "Floor Plan in Binary:" << endl;
@@ -111,9 +164,8 @@ struct Placement
 int main()
 {
     double coolingRate = 0.95;
-
     srand(static_cast<unsigned>(time(0)));
-    string netlistFileName = "d0.txt"; // Provide the correct file name
+    string netlistFileName = "d2.txt"; // Provide the correct file name
 
     Placement placement;
 
@@ -131,7 +183,7 @@ int main()
 
     for (int i = 0; i < nets.size(); ++i)
     {
-        cout << "Net " << i + 1 << " cells: ";
+        cout << "Net " << i + 1 << " components: ";
         for (int j = 0; j < nets[i].size(); ++j)
         {
             cout << nets[i][j] << " ";
@@ -139,7 +191,7 @@ int main()
         cout << endl;
     }
 
-    placement.initialRandomPlacement();
+    placement.initializeGridRandom();
 
     // Display the initial floor plan
     cout << "All CELLS: ";
@@ -154,4 +206,25 @@ int main()
 
     cout << "\n\nInitial Floor Plan IN BINARY:" << endl;
     placement.binaryfloorplan();
+
+    cout << "\n\n HPWL for each net:" << endl;
+    // Calculate and display HPWL for each net
+    for (int i = 0; i < nets.size(); ++i)
+    {
+        cout << "Net " << i + 1 << " HPWL: " << placement.HPWLcalc(nets[i]) << endl;
+    }
+
+    cout << "\n Total Wire Length:" << placement.calcTotalWireLenghth() << endl;
+    cout << "----------------------------------------------------" << endl;
+
+    // Set initial temperature and cooling rate
+    //  double initialTemperature = 500.0 * placement.calcTotalWireLenghth();
+
+    // Display the final floor plan
+    cout << "\nFinal Floor Plan:" << std::endl;
+    placement.displayfloor();
+
+    cout << "\nFinal Floor Plan IN BINARY:" << endl;
+    placement.binaryfloorplan();
+    // cout << "\nFinal HPWL: " << placement.calculateTotalHPWL() << endl;
 }
