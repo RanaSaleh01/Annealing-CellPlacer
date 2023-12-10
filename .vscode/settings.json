@@ -7,7 +7,8 @@
     "cstdlib": "cpp",
     "vector": "cpp",
     "sstream": "cpp",
-    "ostream": "cpp"
+    "ostream": "cpp",
+    "xstring": "cpp"
   },
   "C_Cpp.errorSquiggles": "disabled"
 }

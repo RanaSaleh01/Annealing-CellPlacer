@@ -8,6 +8,12 @@
 #include <ctime>
 #include <string>
 #include <vector>
+#include <limits>
+#include <cstdlib>
+#include <random>
+// #include <SFML/Graphics.hpp>
+// #include <SFML/Window.hpp>
+
 using namespace std;
 
 struct Placement
@@ -15,8 +21,8 @@ struct Placement
     int num_rows;
     int num_cols;
 
-    long long num_comptobeplaced;
-    long long num_connectionBWcomponets;
+    int num_comptobeplaced;
+    int num_connectionBWcomponets;
     vector<int> cells_tobeplaced;
     vector<vector<int>> grid;
     vector<vector<int>> nets;
@@ -99,8 +105,8 @@ struct Placement
         for (int i = 1; i < net.size(); ++i)
         {
             // pos of cells on the grid
-            pair<int, int> pos1 = findpos(net[i - 1]);
-            pair<int, int> pos2 = findpos(net[i]);
+            pair<double, double> pos1 = findpos(net[i - 1]);
+            pair<double, double> pos2 = findpos(net[i]);
 
             // coord of rows
             double row1 = pos1.first + 0.5;
@@ -161,7 +167,7 @@ struct Placement
         }
     }
 
-    void annealingAlg()
+    void annealingAlg(vector<pair<double, double>> &temperatureTWL)
     {
         double coolingRate = 0.95;
         double bestHPWL = calcTotalWireLenghth(); // Initialize with the initial cost
@@ -171,6 +177,9 @@ struct Placement
         double finalTemperature = 5e-6 * initialCost / num_connectionBWcomponets;
         double currentTemperature = initialTemperature;
 
+        double currentHPWL = bestHPWL;
+        cout << "temperature before anealing " << currentTemperature << endl;
+
         int movesPerTemperature = 10 * num_comptobeplaced;
 
         while (currentTemperature > finalTemperature)
@@ -178,14 +187,14 @@ struct Placement
             for (int moves = 0; moves < movesPerTemperature; ++moves)
             {
                 // Evaluate the current solution
-                int currentHPWL = calcTotalWireLenghth();
+                //  double currentHPWL = calcTotalWireLenghth();
 
                 // Make a random move
-                int r1 = rand() % num_rows;
-                int r2 = rand() % num_rows;
+                double r1 = rand() % num_rows;
+                double r2 = rand() % num_rows;
 
-                int c1 = rand() % num_cols;
-                int c2 = rand() % num_cols;
+                double c1 = rand() % num_cols;
+                double c2 = rand() % num_cols;
 
                 swap(grid[r1][c1], grid[r2][c2]);
 
@@ -195,37 +204,99 @@ struct Placement
                 // Calculate the change in cost
                 double diff = newHPWL - currentHPWL;
 
-                // new length accepted if less than old
+                // new length accepted if less than old or the p
+                // (rand() / static_cast<double>(RAND_MAX)) gen int in the range [0, 1)
                 if (diff < 0.0 || exp(-diff / currentTemperature) > (rand() / static_cast<double>(RAND_MAX)))
                 {
                     // cout << "new min cost: " << newHPWL << endl;
-                    if (newHPWL < bestHPWL)
-                    {
-                        bestHPWL = newHPWL;
-                        bestGrid = grid;
-                    }
+                    currentHPWL = newHPWL;
                 }
+
                 else
                 {
                     swap(grid[r1][c1], grid[r2][c2]);
                 }
 
+                if (newHPWL < bestHPWL)
+                {
+                    bestHPWL = currentHPWL;
+                    bestGrid = grid;
+                }
+                temperatureTWL.push_back(make_pair(currentTemperature, bestHPWL));
                 // Cool down the temperature
                 currentTemperature *= coolingRate;
             }
         }
-        cout << "\nBest total wire length: " << bestHPWL << endl;
+        cout << setprecision(6) << "\nBest total wire length: " << bestHPWL << endl;
         cout << "Current temperature: " << currentTemperature << endl;
         cout << endl;
     }
 };
 
+// void visualize(const Placement &placement)
+// {
+//     const int cellSize = 30;
+//     const int windowWidth = placement.num_cols * cellSize;
+//     const int windowHeight = placement.num_rows * cellSize;
+
+//     sf::RenderWindow window(sf::VideoMode(windowWidth, windowHeight), "Simulated Annealing Visualization");
+
+//     // Main loop for animation
+//     while (window.isOpen())
+//     {
+//         sf::Event event;
+//         while (window.pollEvent(event))
+//         {
+//             if (event.type == sf::Event::Closed)
+//             {
+//                 window.close();
+//             }
+//         }
+
+//         // Clear the window
+//         window.clear();
+
+//         // Draw rectangles for each cell
+//         for (int i = 0; i < placement.num_rows; ++i)
+//         {
+//             for (int j = 0; j < placement.num_cols; ++j)
+//             {
+//                 sf::RectangleShape rectangle(sf::Vector2f(cellSize, cellSize));
+
+//                 if (placement.grid[i][j] == -1)
+//                 {
+//                     rectangle.setFillColor(sf::Color::White);
+//                 }
+//                 else
+//                 {
+//                     rectangle.setFillColor(sf::Color::Green);
+//                 }
+
+//                 rectangle.setPosition(j * cellSize, i * cellSize);
+//                 window.draw(rectangle);
+//             }
+//         }
+
+//         // Display the window
+//         window.display();
+//     }
+// }
+
 int main()
 {
+    const int cellSize = 30;
+    const int windowWidth = 800;
+    const int windowHeight = 600;
+
     double coolingRate = 0.95;
     srand(static_cast<unsigned>(time(0)));
-    string netlistFileName = "t3.txt"; // Provide the correct file name
+    // string netlistFileName = "testcase1.txt"; // Provide the correct file name
 
+    // string netlistFileName = "d0.txt";
+    string netlistFileName = "d0.txt";
+
+    // string netlistFileName = "d2.txt";
+    vector<pair<double, double>> temperatureTWL;
     Placement placement;
 
     vector<vector<int>> nets = placement.parseNetlist(netlistFileName, placement);
@@ -239,16 +310,6 @@ int main()
     cout << endl;
     cout << "NETLIST" << endl;
     cout << "----------------------------------------------------" << endl;
-
-    // for (int i = 0; i < nets.size(); ++i)
-    // {
-    //     cout << "Net " << i + 1 << " components: ";
-    //     for (int j = 0; j < nets[i].size(); ++j)
-    //     {
-    //         cout << nets[i][j] << " ";
-    //     }
-    //     cout << endl;
-    // }
 
     placement.initializeGridRandom();
 
@@ -276,10 +337,29 @@ int main()
     cout << "\nTotal Wire Length:" << placement.calcTotalWireLenghth() << endl;
     cout << "----------------------------------------------------" << endl;
 
+    // visualize(placement);
+
     cout << "Starting the SA" << endl;
     // Perform simulated annealing for placement refinement
-    placement.annealingAlg();
+    placement.annealingAlg(temperatureTWL);
     cout << "SA ENDED" << endl;
+
+    /// save for plotting
+    ofstream outputFile("temperature_twl_data.txt");
+    if (outputFile.is_open())
+    {
+        for (const auto &pair : temperatureTWL)
+        {
+            outputFile << pair.first << " " << pair.second << "\n";
+        }
+        outputFile.close();
+    }
+    else
+    {
+        cerr << "Error: Unable to open the output file." << endl;
+        return 1;
+    }
+
     // Display the final floor plan
     cout << "\nFINAL FLOORPLAN PLACEMENT:\n"
          << endl;
