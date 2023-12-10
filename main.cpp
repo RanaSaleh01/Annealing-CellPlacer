@@ -24,8 +24,8 @@ struct Placement
     int num_comptobeplaced;
     int num_connectionBWcomponets;
     vector<int> cells_tobeplaced;
-    vector<vector<int>> grid;
-    vector<vector<int>> nets;
+    vector<vector<int> > grid;
+    vector<vector<int> > nets;
 
     void initializeGridRandom()
     {
@@ -53,7 +53,7 @@ struct Placement
         }
     }
 
-    vector<vector<int>> parseNetlist(string &netlistFileName, Placement &P)
+    vector<vector<int> > parseNetlist(string &netlistFileName, Placement &P)
     {
         ifstream file(netlistFileName);
         if (!file.is_open())
@@ -69,6 +69,7 @@ struct Placement
         {
             int comp;
             file >> comp;
+            cout<<comp<<endl;
             nets[i].resize(comp);
 
             for (int j = 0; j < comp; ++j)
@@ -167,11 +168,12 @@ struct Placement
         }
     }
 
-    void annealingAlg(vector<pair<double, double>> &temperatureTWL)
+    void annealingAlg(vector<pair<double, double> > &temperatureTWL, unsigned int seed)
     {
+        std::mt19937 rng(seed);
         double coolingRate = 0.95;
         double bestHPWL = calcTotalWireLenghth(); // Initialize with the initial cost
-        vector<vector<int>> bestGrid = grid;      // Store the best grid
+        vector<vector<int> > bestGrid = grid;      // Store the best grid
         double initialCost = calcTotalWireLenghth();
         double initialTemperature = 500 * initialCost;
         double finalTemperature = 5e-6 * initialCost / num_connectionBWcomponets;
@@ -281,6 +283,45 @@ struct Placement
 //         window.display();
 //     }
 // }
+void performAnnealingWithCoolingRates(const std::vector<double>& coolingRates, const Placement& initialPlacement)
+{
+    for (double coolingRate : coolingRates)
+    {
+        Placement currentPlacement = initialPlacement; // Make a copy of the initial placement
+        vector<pair<double, double> > temperatureTWL; // Store temperature and total wire length data
+
+        double initialTemperature = 500 * currentPlacement.calcTotalWireLenghth();
+        double finalTemperature = 5e-6 * initialTemperature / currentPlacement.num_connectionBWcomponets;
+        double currentTemperature = initialTemperature;
+        int seed=1234;
+
+        while (currentTemperature > finalTemperature)
+        {
+            // Perform simulated annealing using the current cooling rate
+            currentPlacement.annealingAlg(temperatureTWL, seed);
+            
+            // Update the cooling rate for the next iteration
+            currentTemperature *= coolingRate;
+        }
+
+        // Save the data for this cooling rate to a file
+        std::string outputFileName = "temperature_twl_data_cooling_" + std::to_string(coolingRate) + ".txt";
+        std::ofstream outputFile(outputFileName);
+        if (outputFile.is_open())
+        {
+            for (const auto &pair : temperatureTWL)
+            {
+                outputFile << pair.first << " " << pair.second << "\n";
+            }
+            outputFile.close();
+        }
+        else
+        {
+            std::cerr << "Error: Unable to open the output file for cooling rate " << coolingRate << std::endl;
+            // You might want to handle this error condition appropriately
+        }
+    }
+}
 
 int main()
 {
@@ -296,10 +337,10 @@ int main()
     string netlistFileName = "d0.txt";
 
     // string netlistFileName = "d2.txt";
-    vector<pair<double, double>> temperatureTWL;
+    vector<pair<double, double> > temperatureTWL;
     Placement placement;
 
-    vector<vector<int>> nets = placement.parseNetlist(netlistFileName, placement);
+    vector<vector<int> > nets = placement.parseNetlist(netlistFileName, placement);
     cout << "----------------------------------------------------" << endl;
     cout << endl;
     cout << endl;
@@ -341,7 +382,8 @@ int main()
 
     cout << "Starting the SA" << endl;
     // Perform simulated annealing for placement refinement
-    placement.annealingAlg(temperatureTWL);
+    unsigned seed = 42;
+    placement.annealingAlg(temperatureTWL, seed);
     cout << "SA ENDED" << endl;
 
     /// save for plotting
@@ -359,6 +401,12 @@ int main()
         cerr << "Error: Unable to open the output file." << endl;
         return 1;
     }
+
+ // Define cooling rates to test
+     vector<double> coolingRates = {0.9, 0.95, 0.99};
+
+    // Perform simulated annealing with different cooling rates
+    performAnnealingWithCoolingRates(coolingRates, placement);
 
     // Display the final floor plan
     cout << "\nFINAL FLOORPLAN PLACEMENT:\n"
