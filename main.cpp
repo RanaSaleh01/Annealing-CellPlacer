@@ -168,10 +168,9 @@ struct Placement
         }
     }
 
-    void annealingAlg(vector<pair<double, double> > &temperatureTWL, unsigned int seed)
+    void annealingAlg(vector<pair<double, double> > &temperatureTWL, unsigned int seed, double coolingRate ,double& result)
     {
         std::mt19937 rng(seed);
-        double coolingRate = 0.95;
         double bestHPWL = calcTotalWireLenghth(); // Initialize with the initial cost
         vector<vector<int> > bestGrid = grid;      // Store the best grid
         double initialCost = calcTotalWireLenghth();
@@ -230,10 +229,14 @@ struct Placement
             }
         }
         cout << setprecision(6) << "\nBest total wire length: " << bestHPWL << endl;
+        result=bestHPWL;
+
         cout << "Current temperature: " << currentTemperature << endl;
         cout << endl;
     }
 };
+
+
 
 // void visualize(const Placement &placement)
 // {
@@ -283,45 +286,6 @@ struct Placement
 //         window.display();
 //     }
 // }
-void performAnnealingWithCoolingRates(const std::vector<double>& coolingRates, const Placement& initialPlacement)
-{
-    for (double coolingRate : coolingRates)
-    {
-        Placement currentPlacement = initialPlacement; // Make a copy of the initial placement
-        vector<pair<double, double> > temperatureTWL; // Store temperature and total wire length data
-
-        double initialTemperature = 500 * currentPlacement.calcTotalWireLenghth();
-        double finalTemperature = 5e-6 * initialTemperature / currentPlacement.num_connectionBWcomponets;
-        double currentTemperature = initialTemperature;
-        int seed=1234;
-
-        while (currentTemperature > finalTemperature)
-        {
-            // Perform simulated annealing using the current cooling rate
-            currentPlacement.annealingAlg(temperatureTWL, seed);
-            
-            // Update the cooling rate for the next iteration
-            currentTemperature *= coolingRate;
-        }
-
-        // Save the data for this cooling rate to a file
-        std::string outputFileName = "temperature_twl_data_cooling_" + std::to_string(coolingRate) + ".txt";
-        std::ofstream outputFile(outputFileName);
-        if (outputFile.is_open())
-        {
-            for (const auto &pair : temperatureTWL)
-            {
-                outputFile << pair.first << " " << pair.second << "\n";
-            }
-            outputFile.close();
-        }
-        else
-        {
-            std::cerr << "Error: Unable to open the output file for cooling rate " << coolingRate << std::endl;
-            // You might want to handle this error condition appropriately
-        }
-    }
-}
 
 int main()
 {
@@ -383,7 +347,8 @@ int main()
     cout << "Starting the SA" << endl;
     // Perform simulated annealing for placement refinement
     unsigned seed = 42;
-    placement.annealingAlg(temperatureTWL, seed);
+    double x;
+    placement.annealingAlg(temperatureTWL, seed, coolingRate,x);
     cout << "SA ENDED" << endl;
 
     /// save for plotting
@@ -402,11 +367,13 @@ int main()
         return 1;
     }
 
+   
+
  // Define cooling rates to test
-     vector<double> coolingRates = {0.9, 0.95, 0.99};
+     //vector<double> coolingRates = {0.9, 0.95, 0.99};
 
     // Perform simulated annealing with different cooling rates
-    performAnnealingWithCoolingRates(coolingRates, placement);
+    //performAnnealingWithCoolingRates(coolingRates, placement);
 
     // Display the final floor plan
     cout << "\nFINAL FLOORPLAN PLACEMENT:\n"
@@ -415,4 +382,28 @@ int main()
     cout << "\nFinal FloorPlan IN BINARY:"
          << endl;
     placement.binaryfloorplan();
+
+
+const int arraySize = 5;
+double coolingRateArr[arraySize] = {0.95, 0.90, 0.86, 0.98, 0.78};
+double bestHPWLarr[arraySize];
+for (int i = 0; i<arraySize; ++i)
+{
+    placement.annealingAlg(temperatureTWL, seed, coolingRateArr[i],bestHPWLarr[i]);
+    //costs.push_back(value)
+}
+ ofstream outputFile2("coolingVsTWL.csv");
+    if (outputFile2.is_open())
+    {
+        for (int i=0;i<5;i++)
+        {
+            outputFile2<<coolingRateArr[i]<<","<<bestHPWLarr[i]<<endl;
+        }
+        outputFile.close();
+    }
+    else
+    {
+        cerr << "Error: Unable to open the output file." << endl;
+        return 1;
+    }
 }
